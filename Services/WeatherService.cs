@@ -78,6 +78,40 @@ public class WeatherService
         // 4. Set analysis immediately without waiting for AI
         record.Analysis = analysis;
 
+        // 4b. Aggregate 5-day daily forecasts using LINQ
+        record.ForecastDays = weatherData.list
+            .Where(x => !string.IsNullOrEmpty(x.dt_txt))
+            .GroupBy(x => x.dt_txt![..10]) // Group by date portion "YYYY-MM-DD"
+            .Take(5)
+            .Select(g => {
+                var date = DateTime.Parse(g.Key);
+                return new ForecastDay
+                {
+                    DayName = date.ToString("ddd"),
+                    Date = date.ToString("MMM dd"),
+                    TempMin = Math.Round(g.Min(x => x.main?.temp ?? 0), 1),
+                    TempMax = Math.Round(g.Max(x => x.main?.temp ?? 0), 1),
+                    TempAvg = Math.Round(g.Average(x => x.main?.temp ?? 0), 1),
+                    Humidity = (int)g.Average(x => x.main?.humidity ?? 0),
+                    WindSpeed = Math.Round(g.Average(x => x.wind?.speed ?? 0), 1),
+                    Condition = g.GroupBy(x => x.weather?.FirstOrDefault()?.main ?? "Clear")
+                                 .OrderByDescending(cg => cg.Count())
+                                 .First().Key,
+                    Icon = (g.GroupBy(x => x.weather?.FirstOrDefault()?.main ?? "Clear")
+                             .OrderByDescending(cg => cg.Count())
+                             .First().Key) switch
+                    {
+                        "Clear" => "bi-sun-fill text-warning",
+                        "Clouds" => "bi-cloud-fill text-secondary",
+                        "Rain" => "bi-cloud-rain-fill text-primary",
+                        "Drizzle" => "bi-cloud-drizzle-fill text-info",
+                        "Thunderstorm" => "bi-cloud-lightning-rain-fill text-danger",
+                        "Snow" => "bi-snow text-info",
+                        _ => "bi-cloud-fill text-secondary"
+                    }
+                };
+            }).ToList();
+
         // 5. Fire-and-forget AI tips so weather loads instantly
         _ = Task.Run(async () => {
             try {

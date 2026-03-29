@@ -175,3 +175,25 @@ body {
 
 .bg-haze { background-image: url('https://images.unsplash.com/photo-1481026469463-66327c86e544?q=80&w=2000&auto=format&fit=crop') !important; background-size: cover !important; background-position: center !important; }
 .bg-snow { background-image: url('https://images.unsplash.com/photo-1478265409131-1f65c88f965c?q=80&w=2000&auto=format&fit=crop') !important; background-size: cover !important; background-position: center !important; }
+
+/* Forecast Chart Container */
+.forecast-modal-content {
+    width: 90%; 
+    max-width: 900px; 
+    max-height: 90vh; 
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#forecastChart {
+    max-width: 100%;
+    max-height: 250px;
+}
+
+/* Ensure the chart doesn't expand beyond its container */
+.chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+    overflow: hidden;
+}

@@ -10,4 +10,5 @@ public class WeatherRecord
     public string IconPath { get; set; } = string.Empty;
     
     public WeatherAnalysis? Analysis { get; set; }
+    public List<ForecastDay> ForecastDays { get; set; } = new();
 }
