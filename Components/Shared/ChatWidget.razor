@@ -1,0 +1,107 @@
+@rendermode InteractiveServer
+@inject WeatherAI.Services.ChatService ChatService
+@inject WeatherAI.Services.WeatherAppState AppState
+@implements IDisposable
+
+<div class="d-flex flex-column h-100 p-3 w-100 position-absolute top-0 bottom-0 left-0 right-0">
+    <h4 class="fw-bold text-white mb-3 pt-3"><i class="bi bi-shield-check me-2"></i>Guardian</h4>
+    
+    <div class="chat-history-area mb-3 pe-2 shadow-sm rounded flex-grow-1 d-flex flex-column" style="overflow-y: auto;">
+        @if(ChatMessages.Any() || IsChatLoading)
+        {
+            <div class="mt-auto">
+            @foreach(var msg in ChatMessages)
+            {
+                <div class="mb-3 text-start animate__animated animate__fadeInUp">
+                    <div class="text-white-50 small mb-1"><i class="bi bi-person me-1"></i>You <span class="float-end">@msg.Timestamp.ToLocalTime().ToShortTimeString()</span></div>
+                    <div class="bg-primary bg-opacity-50 border border-primary border-opacity-25 rounded p-2 text-white d-inline-block shadow-sm">@msg.UserMessage</div>
+                </div>
+                <div class="mb-3 text-start animate__animated animate__fadeInUp">
+                    <div class="text-info small mb-1"><i class="bi bi-robot me-1"></i>Guardian <span class="float-end">@msg.Timestamp.ToLocalTime().ToShortTimeString()</span></div>
+                    <div class="bg-dark bg-opacity-75 border border-info border-opacity-25 rounded p-2 text-white shadow-sm" style="white-space: pre-line;">@msg.BotResponse</div>
+                </div>
+            }
+            @if (IsChatLoading)
+            {
+                <div class="mb-3 text-start animate__animated animate__fadeInUp">
+                    <div class="text-info small mb-1"><i class="bi bi-robot me-1"></i>Guardian</div>
+                    <div class="bg-dark bg-opacity-75 border border-info border-opacity-25 rounded p-2 text-white shadow-sm d-inline-block">
+                        <span class="fst-italic text-white-50"><span class="spinner-grow spinner-grow-sm me-2" role="status"></span>Guardian is typing...</span>
+                    </div>
+                </div>
+            }
+            </div>
+        }
+        else
+        {
+            <div class="text-white-50 text-center small my-auto d-flex flex-column justify-content-center h-100">
+                <i class="bi bi-chat-dots display-3 d-block mb-3"></i>
+                <p>Hello! I'm your Weather Guardian.</p>
+                <p>Ask me about travel safety, packing, or conditions for your searched city.</p>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex gap-2 pb-3 mt-auto">
+        <input type="text"
+               class="form-control glass-input text-white w-100"
+               placeholder="Ask for advice..."
+               @bind="UserChatInput"
+               @bind:event="oninput"
+               @onkeyup="HandleChatKeyPress" />
+        <button class="btn btn-info px-3" @onclick="SendChatMessage" disabled="@(string.IsNullOrWhiteSpace(UserChatInput) || IsChatLoading)">
+            @if(IsChatLoading) {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            } else {
+                <i class="bi bi-send text-dark"></i>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    private string UserChatInput = string.Empty;
+    private bool IsChatLoading = false;
+    private List<WeatherAI.Models.ChatMessage> ChatMessages = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.OnChange += StateHasChanged;
+        await LoadChatHistory();
+    }
+    
+    private async Task LoadChatHistory()
+    {
+        ChatMessages = await ChatService.GetChatHistoryAsync();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+
+    private async Task HandleChatKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(UserChatInput) && !IsChatLoading)
+        {
+            await SendChatMessage();
+        }
+    }
+
+    private async Task SendChatMessage()
+    {
+        if (string.IsNullOrWhiteSpace(UserChatInput)) return;
+
+        IsChatLoading = true;
+        var input = UserChatInput;
+        UserChatInput = string.Empty;
+        StateHasChanged();
+
+        await ChatService.SendMessageAsync(input, AppState.CurrentWeather);
+        
+        await LoadChatHistory();
+
+        IsChatLoading = false;
+        StateHasChanged();
+    }
+}

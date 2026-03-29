@@ -1,0 +1,233 @@
+@page "/"
+@rendermode InteractiveServer
+@inject WeatherAI.Services.WeatherService WeatherService
+@inject WeatherAI.Services.WeatherAppState AppState
+
+<PageTitle>WeatherAI - Home</PageTitle>
+
+@if (IsLoading)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container-fluid py-5 mt-4">
+        <div class="row w-100 justify-content-center m-0">
+            <div class="col-12 col-md-11 col-xl-10">
+                
+                <!-- Search Bar Glass Container -->
+                <div class="glass-container mb-4 position-relative" style="animation: fadeIn 0.8s ease-in-out;">
+                    <h2 class="fw-bold text-white mb-4 text-center">🌍 Discover Weather</h2>
+                    <div class="d-flex gap-2 align-items-stretch">
+                        <input type="text"
+                               class="form-control form-control-lg glass-input text-white"
+                               placeholder="Enter a city name..."
+                               @bind="SearchQuery"
+                               @bind:event="oninput"
+                               @onkeyup="HandleKeyPress" />
+                        <button class="btn btn-light btn-lg px-4" @onclick="() => SearchWeather(SearchQuery)" disabled="@string.IsNullOrWhiteSpace(SearchQuery)">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        
+                        <!-- History Dropdown Button -->
+                        <button class="btn btn-secondary btn-lg px-4" @onclick="ToggleHistory">
+                            <i class="bi bi-clock-history me-1"></i> <span class="d-none d-sm-inline">History</span>
+                        </button>
+                        
+                        <!-- History Overlay Modal natively inlined -->
+                        @if (ShowHistoryModal)
+                        {
+                            <div class="position-absolute top-100 end-0 mt-2 glass-container p-3 text-start shadow-lg" style="width: 350px; z-index: 1050 !important; max-height: 400px; overflow-y: auto;">
+                                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-light border-opacity-25 pb-2">
+                                    <h5 class="mb-0 text-white"><i class="bi bi-clock-history me-2"></i>Recent (10)</h5>
+                                    <button class="btn-close btn-close-white" @onclick="ToggleHistory"></button>
+                                </div>
+                                @if(RecentSearches.Any())
+                                {
+                                    <ul class="list-unstyled mb-0">
+                                    @foreach(var search in RecentSearches)
+                                    {
+                                        <li class="mb-3 border-bottom border-light border-opacity-25 pb-2 cursor-pointer search-item-hover" @onclick='async () => { SearchQuery = search.CityName; ShowHistoryModal = false; await SearchWeather(search.CityName); }'>
+                                            <div class="d-flex justify-content-between align-items-center text-white">
+                                                <span class="fw-bold">@search.CityName</span>
+                                                <span>@search.Temp°C</span>
+                                            </div>
+                                            <div class="text-white-50 small">@search.Condition <span class="float-end">@search.Timestamp.ToLocalTime().ToShortTimeString()</span></div>
+                                        </li>
+                                    }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <div class="text-white-50 text-center small my-3">No searches tracked.</div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Quick Selects -->
+                    <div class="mt-4 text-center">
+                        <span class="text-white-50 small me-2">Quick Select:</span>
+                        <button class="btn btn-sm btn-outline-light rounded-pill px-3 me-2 select-btn" @onclick='() => SearchWeather("Rawalpindi")'>Rawalpindi</button>
+                        <button class="btn btn-sm btn-outline-light rounded-pill px-3 select-btn" @onclick='() => SearchWeather("Islamabad")'>Islamabad</button>
+                    </div>
+                </div>
+
+                <!-- Weather Display Content -->
+                @if (CurrentWeather != null)
+                {
+                    <div class="weather-card mb-4" style="animation: slideUp 0.6s ease-out;">
+                        <h2 class="display-5 fw-bold text-white mb-1">@CurrentWeather.City</h2>
+                        
+                        <div class="d-flex align-items-center justify-content-center my-4">
+                            <i class="bi @CurrentWeather.IconPath display-1 me-4"></i>
+                            <div class="display-1 fw-bold text-white">@CurrentWeather.TemperatureC°</div>
+                        </div>
+
+                        <div class="text-center text-white-50 fs-5 text-uppercase tracking-wider mb-4">
+                            @CurrentWeather.Condition
+                        </div>
+
+                        <hr class="border-light opacity-25" />
+
+                        <div class="row text-white text-center">
+                            <div class="col-6 border-end border-light border-opacity-25">
+                                <div class="fs-4 fw-bold">@CurrentWeather.Humidity%</div>
+                                <div class="text-white-50 small text-uppercase">Humidity</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="fs-4 fw-bold">@CurrentWeather.WindSpeedKmh km/h</div>
+                                <div class="text-white-50 small text-uppercase">Wind Speed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (CurrentWeather.Analysis != null)
+                    {
+                        <!-- Analysis Widget -->
+                        <div class="glass-container mt-4" style="animation: fadeIn 0.8s ease-in-out;">
+                            <h4 class="fw-bold text-white mb-3"><i class="bi bi-graph-up-arrow me-2"></i>Analysis</h4>
+                            
+                            <div class="row text-white text-center mb-4">
+                                <div class="col-4 border-end border-light border-opacity-25">
+                                    <div class="fs-5 fw-bold">@CurrentWeather.Analysis.AverageTemperatureC°C</div>
+                                    <div class="text-white-50 small text-uppercase">Avg Temp</div>
+                                </div>
+                                <div class="col-4 border-end border-light border-opacity-25">
+                                    <div class="fs-5 fw-bold">@CurrentWeather.Analysis.MaxHumidity%</div>
+                                    <div class="text-white-50 small text-uppercase">Max Hum</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="fs-5 fw-bold">
+                                        @if(CurrentWeather.Analysis.RainWarning) { <span class="text-warning"><i class="bi bi-cloud-rain me-1"></i> Yes</span> } else { <span>No</span> }
+                                    </div>
+                                    <div class="text-white-50 small text-uppercase">Rain Risk</div>
+                                </div>
+                            </div>
+
+                            <hr class="border-light opacity-25" />
+
+                            <div class="text-start mt-3">
+                                <p class="mb-2 text-white">
+                                    <i class="bi bi-robot text-info me-2"></i><strong class="text-info">Coach (EN):</strong> @CurrentWeather.Analysis.GeminiTipEnglish
+                                </p>
+                                <p class="mb-0 text-white">
+                                    <i class="bi bi-robot text-warning me-2"></i><strong class="text-warning">Coach (UR):</strong> @CurrentWeather.Analysis.GeminiTipUrdu
+                                </p>
+                            </div>
+                        </div>
+                    }
+                    
+                    <!-- Mobile exclusively AI panel natively embedding Chat for phones since the fixed panel hides on xs screens -->
+                    <div class="d-md-none mt-4">
+                        <WeatherAI.Components.Shared.ChatWidget />
+                    </div>
+                }
+                else if (HasSearched)
+                {
+                    <div class="alert alert-warning text-center mt-4">
+                        Weather data for '@SearchQuery' could not be found. Please try another city.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .search-item-hover:hover { background-color: rgba(255,255,255,0.05); }
+</style>
+
+@code {
+    private string SearchQuery = string.Empty;
+    private WeatherAI.Models.WeatherRecord? CurrentWeather;
+    private bool IsLoading = false;
+    private bool HasSearched = false;
+    private bool ShowHistoryModal = false;
+    
+    private List<WeatherAI.Models.SearchHistory> RecentSearches = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRecentSearches();
+    }
+
+    private void ToggleHistory()
+    {
+        ShowHistoryModal = !ShowHistoryModal;
+    }
+
+    private async Task LoadRecentSearches()
+    {
+        RecentSearches = await WeatherService.GetRecentSearchesAsync(10);
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            await SearchWeather(SearchQuery);
+        }
+    }
+
+    private async Task SearchWeather(string location)
+    {
+        if (string.IsNullOrWhiteSpace(location)) return;
+
+        IsLoading = true;
+        HasSearched = true;
+        SearchQuery = location; 
+        StateHasChanged();
+
+        CurrentWeather = await WeatherService.GetWeatherAsync(location);
+        
+        if (CurrentWeather != null)
+        {
+            AppState.SetBackground(GetBackgroundClass(CurrentWeather.Condition));
+            AppState.SetCurrentWeather(CurrentWeather);
+        }
+        
+        await LoadRecentSearches();
+
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private string GetBackgroundClass(string condition)
+    {
+        if (string.IsNullOrEmpty(condition)) return "bg-sunny";
+        
+        var lower = condition.ToLower();
+        if (lower.Contains("rain") || lower.Contains("drizzle")) return "bg-rainy";
+        if (lower.Contains("cloud")) return "bg-cloudy";
+        if (lower.Contains("thunder") || lower.Contains("storm")) return "bg-thunder";
+        if (lower.Contains("snow")) return "bg-snow";
+        if (lower.Contains("haze") || lower.Contains("mist") || lower.Contains("fog") || lower.Contains("smoke")) return "bg-haze";
+        return "bg-sunny"; // Fallback for Clear, Sunny, etc.
+    }
+}

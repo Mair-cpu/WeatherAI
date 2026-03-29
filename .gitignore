@@ -1,0 +1,24 @@
+## .NET Build
+bin/
+obj/
+out/
+
+## IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+## SQLite Database
+*.db
+data/
+
+## Secrets - NEVER push API keys
+appsettings.Development.json
+
+## OS Files
+.DS_Store
+Thumbs.db
+
+## Test artifacts
+TestApp/

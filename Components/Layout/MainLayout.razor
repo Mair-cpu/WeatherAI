@@ -1,0 +1,39 @@
+@inherits LayoutComponentBase
+@inject WeatherAI.Services.WeatherAppState AppState
+@implements IDisposable
+
+<div class="page @AppState.BackgroundClass m-0 p-0 transition-bg" style="min-height: 100vh; overflow-x: hidden;">
+    <div class="row m-0 w-100 h-100">
+        <!-- Main Application Area (75% on lg devices) -->
+        <div class="col-lg-9 col-md-8 p-0" style="height: 100vh; overflow-y: auto;">
+            <main class="w-100">
+                <article class="content px-2 px-md-4">
+                    @Body
+                </article>
+            </main>
+        </div>
+
+        <!-- Stable Vertical Panel for ChatWidget (25% on lg devices) -->
+        <div class="col-lg-3 col-md-4 p-0 d-none d-md-block chat-panel position-relative">
+            <WeatherAI.Components.Shared.ChatWidget />
+        </div>
+    </div>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}
