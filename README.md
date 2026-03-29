@@ -5,6 +5,14 @@ A modern **.NET 8 Blazor Web App** featuring real-time weather data, an AI trave
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-purple) ![Blazor](https://img.shields.io/badge/Blazor-Server-blue) ![SQLite](https://img.shields.io/badge/Database-SQLite-green) ![Gemini AI](https://img.shields.io/badge/AI-Gemini%202.0-orange)
 
 ---
+## 📺 Project Demo
+Watch the WeatherAI dashboard in action, featuring the Glassmorphism UI and AI Chat integration.
+
+[![WeatherAI Demo Video](https://img.youtube.com/vi/5BDDVXC2buQ/maxresdefault.jpg)](https://www.youtube.com/watch?v=5BDDVXC2buQ)
+
+> **[Click here to watch the video on YouTube](https://www.youtube.com/watch?v=5BDDVXC2buQ)**
+
+---
 
 ## ✨ Features
 
